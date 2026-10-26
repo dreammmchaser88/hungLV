@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zekas VIP Hub</title>
+    <meta name="description" content="Cài đặt nhanh Shadowrocket Cấu hình, Mô-đun và DNS chống thu hồi cho Locket Gold. Thiết kế tối giản theo Lovable Design.">
+    <meta name="theme-color" content="#f7f4ed">
+    <link rel="icon" href="https://i.pinimg.com/736x/d4/42/64/d4426485d809524bf737bab3964144ae.jpg" type="image/jpeg">
+    <link rel="apple-touch-icon" href="https://i.pinimg.com/736x/d4/42/64/d4426485d809524bf737bab3964144ae.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-cream: #f7f4ed;
+            --charcoal: #1c1c1c;
+            --charcoal-83: rgba(28, 28, 28, 0.83);
+            --charcoal-40: rgba(28, 28, 28, 0.40);
+            --charcoal-04: rgba(28, 28, 28, 0.04);
+            --muted-gray: #5f5f5d;
+            --border-cream: #eceae4;
+            --off-white: #fcfbf8;
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--charcoal);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Lovable Typography */
+        h1, h2, h3 {
+            font-weight: 600;
+            color: var(--charcoal);
+            letter-spacing: -0.04em;
+        }
+
+        /* Lovable Card */
+        .lovable-card {
+            background-color: var(--bg-cream);
+            border: 1px solid var(--border-cream);
+            border-radius: 14px;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .lovable-card:hover {
+            border-color: rgba(28, 28, 28, 0.25);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Large Prominent Dark Button */
+        .btn-dark {
+            background-color: var(--charcoal);
+            color: var(--off-white);
+            border-radius: 8px;
+            padding: 13px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: rgba(255, 255, 255, 0.2) 0px 0.5px 0px 0px inset,
+                        rgba(0, 0, 0, 0.2) 0px 0px 0px 0.5px inset,
+                        rgba(0, 0, 0, 0.06) 0px 1px 3px 0px;
+            transition: opacity 0.15s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-dark:active {
+            opacity: 0.85;
+            transform: scale(0.985);
+        }
+
+        /* Lovable Ghost Button */
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--charcoal);
+            border: 1px solid var(--charcoal-40);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background-color 0.15s ease, opacity 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .btn-ghost:hover {
+            background-color: var(--charcoal-04);
+        }
+
+        .btn-ghost:active {
+            opacity: 0.8;
+        }
+
+        /* Khung Link Thô */
+        .raw-link-box {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-cream);
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        /* Atmospheric subtle wash */
+        .hero-wash {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(235, 225, 205, 0.6) 0%, rgba(247, 244, 237, 0) 70%);
+            filter: blur(40px);
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between py-10 px-4 sm:px-6 relative overflow-x-hidden">
+
+    <!-- Atmospheric background wash -->
+    <div class="hero-wash"></div>
+
+    <!-- Toast Notification (Lovable Style) -->
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-3">
+        <div class="bg-[#1c1c1c] text-[#fcfbf8] px-4 py-2.5 rounded-full text-xs font-medium tracking-wide shadow-xl border border-[rgba(255,255,255,0.15)] flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span id="toast-text">Đã sao chép link!</span>
+        </div>
+    </div>
+
+    <main class="relative z-10 max-w-[560px] mx-auto w-full my-auto">
+        
+        <!-- Header -->
+        <header class="text-center mb-8 pt-2 flex flex-col items-center">
+            <!-- Logo Title -->
+            <img src="https://i.pinimg.com/736x/d4/42/64/d4426485d809524bf737bab3964144ae.jpg" 
+                 alt="Zekas VIP Hub Logo" 
+                 class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-sm border border-[#eceae4] mb-3 hover:scale-105 transition-transform duration-200">
+
+            <div class="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full border border-[#eceae4] bg-[#f7f4ed] text-[12px] text-[#5f5f5d]">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Zekas Dev</span>
+            </div>
+            
+            <h1 class="text-3xl sm:text-4xl text-[#1c1c1c]">
+                Zekas VIP Hub
+            </h1>
+        </header>
+
+        <!-- Action Cards -->
+        <div class="space-y-4">
+
+            <!-- 1. CẤU HÌNH TIÊU CHUẨN -->
+            <section class="lovable-card p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-[#1c1c1c] text-[#fcfbf8] text-xs font-semibold flex items-center justify-center shrink-0">
+                        1
+                    </div>
+                    <h2 class="text-[18px] text-[#1c1c1c]">Cấu hình</h2>
+                </div>
+
+                <a id="btn-conf-open" href="shadowrocket://config/add/https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.conf"
+                   class="btn-dark mb-3">
+                    <i class="fa-solid fa-download text-sm"></i>
+                    <span>Mở & Cài Cấu hình (.conf)</span>
+                </a>
+
+                <div class="raw-link-box">
+                    <span class="text-xs text-[#5f5f5d] font-mono truncate select-all">https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.conf</span>
+                    <button onclick="copyLink('https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.conf')"
+                            class="btn-ghost shrink-0" title="Bấm để copy">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Sao chép</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 2. MÔ-ĐUN -->
+            <section class="lovable-card p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full border border-[#eceae4] text-[#1c1c1c] text-xs font-semibold flex items-center justify-center shrink-0">
+                        2
+                    </div>
+                    <h2 class="text-[18px] text-[#1c1c1c]">Mô-đun</h2>
+                </div>
+
+                <a id="btn-module-open" href="shadowrocket://install?module=https%3A%2F%2Fraw.githubusercontent.com%2Flhhoang5425%2Fnocket-gay-hoang3te%2Fmain%2FConfig%2Fnocket-gay.sgmodule"
+                   class="btn-dark mb-3">
+                    <i class="fa-solid fa-puzzle-piece text-sm"></i>
+                    <span>Mở & Cài Mô-đun (.sgmodule)</span>
+                </a>
+
+                <div class="raw-link-box">
+                    <span class="text-xs text-[#5f5f5d] font-mono truncate select-all">https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.sgmodule</span>
+                    <button onclick="copyLink('https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.sgmodule')"
+                            class="btn-ghost shrink-0" title="Bấm để copy">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Sao chép</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3. DNS CHỐNG THU HỒI -->
+            <section class="lovable-card p-5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full border border-[#eceae4] text-[#1c1c1c] text-xs font-semibold flex items-center justify-center shrink-0">
+                        3
+                    </div>
+                    <h2 class="text-[18px] text-[#1c1c1c]">DNS Chống Thu Hồi</h2>
+                </div>
+
+                <a href="https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Locket/LocketGold.mobileconfig"
+                   class="btn-dark mb-3">
+                    <i class="fa-brands fa-apple text-base"></i>
+                    <span>Cài Đặt Hồ Sơ (.mobileconfig)</span>
+                </a>
+
+                <div class="raw-link-box">
+                    <span class="text-xs text-[#5f5f5d] font-mono truncate select-all">https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Locket/LocketGold.mobileconfig</span>
+                    <button onclick="copyLink('https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Locket/LocketGold.mobileconfig')"
+                            class="btn-ghost shrink-0" title="Bấm để copy">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Sao chép</span>
+                    </button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Hướng dẫn 3 bước ngắn gọn, clean nhất (Làm 1, 2 rồi 3 là Done) -->
+        <section class="mt-8 lovable-card p-5 bg-[rgba(28,28,28,0.02)]">
+            <h3 class="text-sm font-semibold text-[#1c1c1c] mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-xs"></i>
+                <span>Hướng dẫn cài đặt (3 bước là Xong)</span>
+            </h3>
+            
+            <ol class="space-y-2.5 text-[13px] text-[#5f5f5d]">
+                <li class="flex items-start gap-2.5">
+                    <span class="font-bold text-[#1c1c1c] shrink-0">1.</span>
+                    <span>Bấm nút <strong>(1)</strong> để nạp Cấu hình vào Shadowrocket ➔ Tích chọn sử dụng.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="font-bold text-[#1c1c1c] shrink-0">2.</span>
+                    <span>Bấm nút <strong>(2)</strong> để nạp Mô-đun ➔ Vào mục <em>Giải mã HTTPS</em> bấm bật và tin cậy chứng chỉ.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="font-bold text-[#1c1c1c] shrink-0">3.</span>
+                    <span>Bấm nút <strong>(3)</strong> tải Hồ sơ DNS ➔ Vào <em>Cài đặt iPhone</em> kích hoạt để chống thu hồi là <strong>Hoàn tất (DONE)</strong>!</span>
+                </li>
+            </ol>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 text-center text-xs text-[#5f5f5d] mt-10 pt-4 border-t border-[#eceae4]">
+        <div class="flex items-center justify-center gap-3">
+            <a href="https://github.com/lhhoang5425/nocket-gay-hoang3te" class="hover:text-[#1c1c1c] transition-colors underline decoration-[#eceae4] underline-offset-4">GitHub</a>
+            <span>•</span>
+            <a href="https://t.me/hoang3te" class="hover:text-[#1c1c1c] transition-colors underline decoration-[#eceae4] underline-offset-4">Telegram: @hoang3te</a>
+            <span>•</span>
+            <span>Zekas Dev</span>
+        </div>
+    </footer>
+
+    <!-- Script Tự Động Kích Hoạt & Sao Chép -->
+    <script>
+        function copyLink(url) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast("Đã sao chép link!");
+                }).catch(() => fallbackCopy(url));
+            } else {
+                fallbackCopy(url);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const temp = document.createElement("input");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+            showToast("Đã sao chép link!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            const text = document.getElementById("toast-text");
+            text.textContent = msg;
+            toast.classList.remove("opacity-0", "-translate-y-3");
+            toast.classList.add("opacity-100", "translate-y-0");
+            setTimeout(() => {
+                toast.classList.remove("opacity-100", "translate-y-0");
+                toast.classList.add("opacity-0", "-translate-y-3");
+            }, 2000);
+        }
+
+        // Tự động mở Deep Link nếu có tham số ?open=...
+        document.addEventListener("DOMContentLoaded", function() {
+            const params = new URLSearchParams(window.location.search);
+            const action = params.get("open");
+            if (action === "conf") {
+                window.location.href = "shadowrocket://config/add/https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Config/nocket-gay.conf";
+            } else if (action === "module") {
+                window.location.href = "shadowrocket://install?module=https%3A%2F%2Fraw.githubusercontent.com%2Flhhoang5425%2Fnocket-gay-hoang3te%2Fmain%2FConfig%2Fnocket-gay.sgmodule";
+            } else if (action === "dns") {
+                window.location.href = "https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/Locket/LocketGold.mobileconfig";
+            }
+        });
+    </script>
+</body>
+</html>

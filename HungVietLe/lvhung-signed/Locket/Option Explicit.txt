@@ -1,0 +1,168 @@
+Option Explicit
+
+Function GetSheetByName(sheetName As String) As Worksheet
+    Dim ws As Worksheet
+    For Each ws In ThisWorkbook.Worksheets
+        If UCase(Trim(ws.Name)) = UCase(Trim(sheetName)) Then
+            Set GetSheetByName = ws
+            Exit Function
+        End If
+    Next ws
+    Set GetSheetByName = Nothing
+End Function
+
+Sub TaoDanhSachNgay()
+    Dim wsOACT As Worksheet, wsDAILY As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim dict As Object
+    Dim cellVal As Variant
+    Dim strDate As String, listDates As String
+    
+    Set wsOACT = GetSheetByName("oact")
+    Set wsDAILY = GetSheetByName("oact daily")
+    
+    If wsOACT Is Nothing Or wsDAILY Is Nothing Then
+        MsgBox "Khong tim thay sheet 'oact' hoac 'oact daily'! Vui long kiem tra lai ten Sheet.", vbCritical, "Loi Ten Sheet"
+        Exit Sub
+    End If
+    
+    Set dict = CreateObject("Scripting.Dictionary")
+    lastRow = wsOACT.Cells(wsOACT.Rows.Count, "C").End(xlUp).Row
+    
+    For i = 11 To lastRow
+        cellVal = wsOACT.Cells(i, 3).Value
+        If IsDate(cellVal) Then
+            strDate = Format(cellVal, "dd/mm/yyyy")
+            If Not dict.Exists(strDate) Then
+                dict.Add strDate, Nothing
+            End If
+        End If
+    Next i
+    
+    If dict.Count = 0 Then
+        MsgBox "Khong tim thay du lieu ngay hop le tai cot C sheet oact!", vbExclamation, "Thong bao"
+        Exit Sub
+    End If
+    
+    listDates = "Tat ca," & Join(dict.Keys, ",")
+    
+    With wsDAILY.Range("AE12").Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
+        xlBetween, Formula1:=listDates
+        .IgnoreBlank = True
+        .InCellDropdown = True
+        .ShowInput = True
+        .ShowError = True
+    End With
+    
+    wsDAILY.Range("AD12").Value = "Chon ngay:"
+    wsDAILY.Range("AD12").Font.Bold = True
+    wsDAILY.Range("AD12").HorizontalAlignment = xlRight
+    
+    wsDAILY.Columns("AE").AutoFit
+    
+    MsgBox "Da cap nhat danh sach ngay vao o AE12 sheet oact daily!", vbInformation, "Thanh cong"
+End Sub
+
+Sub LayDuLieuOACT()
+    Dim wsOACT As Worksheet, wsDAILY As Worksheet
+    Dim lastRowOACT As Long
+    Dim selectedDate As String, strDate As String
+    Dim dataRange As Range
+    Dim arrSrc As Variant, arrOut() As Variant
+    Dim i As Long, j As Long, countData As Long
+    Dim currentSigStartRow As Long, targetSigStartRow As Long, diff As Long
+    Dim findSig As Range
+    
+    Set wsOACT = GetSheetByName("oact")
+    Set wsDAILY = GetSheetByName("oact daily")
+    
+    If wsOACT Is Nothing Or wsDAILY Is Nothing Then
+        MsgBox "Khong tim thay sheet 'oact' hoac 'oact daily'! Vui long kiem tra lai ten Sheet.", vbCritical, "Loi Ten Sheet"
+        Exit Sub
+    End If
+    
+    selectedDate = Trim(CStr(wsDAILY.Range("AE12").Value))
+    If selectedDate = "" Then
+        MsgBox "Vui long chon ngay tai o AE12 truoc khi lay du lieu!", vbExclamation, "Thong bao"
+        Exit Sub
+    End If
+    
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.Calculation = xlCalculationManual
+    
+    Set findSig = wsDAILY.Columns("A:E").Find("Hai bên cùng xác nh?n", LookIn:=xlValues, LookAt:=xlPart)
+    If Not findSig Is Nothing Then
+        currentSigStartRow = findSig.Row
+    Else
+        currentSigStartRow = 21
+    End If
+    
+    If currentSigStartRow > 15 Then
+        wsDAILY.Range("A15:AE" & (currentSigStartRow - 1)).ClearContents
+        wsDAILY.Range("A15:AE" & (currentSigStartRow - 1)).Borders.LineStyle = xlNone
+    End If
+    
+    lastRowOACT = wsOACT.Cells(wsOACT.Rows.Count, "C").End(xlUp).Row
+    If lastRowOACT < 11 Then GoTo EndSub
+    
+    arrSrc = wsOACT.Range("A11:AE" & lastRowOACT).Value
+    ReDim arrOut(1 To UBound(arrSrc, 1), 1 To 29)
+    countData = 0
+    
+    For i = 1 To UBound(arrSrc, 1)
+        If IsDate(arrSrc(i, 3)) Then
+            strDate = Format(arrSrc(i, 3), "dd/mm/yyyy")
+            If selectedDate = "Tat ca" Or strDate = selectedDate Then
+                countData = countData + 1
+                arrOut(countData, 1) = countData
+                For j = 2 To 29
+                    arrOut(countData, j) = arrSrc(i, j)
+                Next j
+            End If
+        End If
+    Next i
+    
+    Dim neededDataRows As Long
+    neededDataRows = IIf(countData > 0, countData, 1)
+    
+    targetSigStartRow = 15 + neededDataRows + 1
+    diff = targetSigStartRow - currentSigStartRow
+    
+    If diff > 0 Then
+        wsDAILY.Rows(currentSigStartRow & ":" & (targetSigStartRow - 1)).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    ElseIf diff < 0 Then
+        wsDAILY.Rows(targetSigStartRow & ":" & (currentSigStartRow - 1)).Delete Shift:=xlUp
+    End If
+    
+    If countData > 0 Then
+        wsDAILY.Range("A15").Resize(countData, 29).Value = arrOut
+        wsDAILY.Range("C15").Resize(countData, 1).NumberFormat = "dd/mm/yyyy"
+        
+        Set dataRange = wsDAILY.Range("A15:AC" & (15 + countData - 1))
+        With dataRange.Borders
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+            .ColorIndex = xlAutomatic
+        End With
+    End If
+
+EndSub:
+    wsDAILY.Columns("AC").AutoFit
+    
+    Application.CutCopyMode = False
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    
+    If countData > 0 Then
+        MsgBox "Da loc va cap nhat thanh cong " & countData & " dong du lieu!", vbInformation, "Hoan tat"
+    Else
+        MsgBox "Khong tim thay du lieu phu hop cho ngay " & selectedDate & "!", vbExclamation, "Thong bao"
+    End If
+End Sub
+
+
+

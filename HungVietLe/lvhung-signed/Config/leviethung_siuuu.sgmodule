@@ -1,0 +1,82 @@
+#!name = Zekas VIP Hub (Full Locket Gold Module)
+#!desc = Mô-đun Shadowrocket/Surge: Mở khóa Locket Gold Full (2099), YouTube Premium, Spotify, VSCO, PicsArt, Lightroom, CamScanner,... và chặn quảng cáo.
+#!author = Zekas Dev
+#!system = ios
+
+[Rule]
+# Chặn QUIC/UDP của YouTube để ép chạy HTTPS lọc quảng cáo
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT
+
+# Chặn các mạng quảng cáo In-App phổ biến
+DOMAIN-SUFFIX,googleads.g.doubleclick.net,REJECT
+DOMAIN-SUFFIX,admob.com,REJECT
+DOMAIN-SUFFIX,unityads.unity3d.com,REJECT
+DOMAIN-SUFFIX,applvn.com,REJECT
+DOMAIN-SUFFIX,applovin.com,REJECT
+DOMAIN-SUFFIX,vungle.com,REJECT
+DOMAIN-SUFFIX,adcolony.com,REJECT
+
+[Header Rewrite]
+# Xóa ETag chống cache RevenueCat & Spotify
+^https?://api.revenuecat.com/.+/(receipts$|subscribers/?(.*?)*$) header-del x-revenuecat-etag
+^https?://api.revenuecat.com/.+/(receipts$|subscribers/?(.*?)*$) header-del X-RevenueCat-ETag
+http-request ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$ header-del if-none-match
+
+# Chuyển vùng TikTok / Douyin
+(?<=_region=)CN(?=&) URL 307 VN
+(?<=&app_version=)1[6-9]..(?=.?&) URL 307 17.
+(?<=\?version_code=)1[6-9]..(?=.?&) URL 307 17.
+
+[URL Rewrite]
+# Chặn quảng cáo Video YouTube & Tracking
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+
+[Map Local]
+# Phản hồi rỗng trực tiếp cho Ads initplayback của YouTube (tiết kiệm tài nguyên)
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+
+[Script]
+# --- 1. Sub-Store Node Manager ---
+Sub-Store Core = type=http-request,pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info))),script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-1.min.js,requires-body=true,timeout=120
+Sub-Store Simple = type=http-request,pattern=^https?:\/\/sub\.store,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-0.min.js,requires-body=true
+Sub-Store Sync = type=cron,cronexp=0 0 * * *,wake-system=1,timeout=120,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/cron-sync-artifacts.min.js
+
+# --- 2. YouTube Premium Tối Ưu (Vietsub, Chặn Shorts, PiP, Nghe nền) ---
+youtube.request = type=http-request,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|reel\/reel_watch_sequence|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,engine=jsc,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/youtube.response.js
+youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,engine=jsc,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/youtube.response.js,argument="{"lyricLang":"vi","captionLang":"vi","blockUpload":true,"blockImmersive":true,"debug":false}"
+
+# --- 3. Spotify Premium (Chuẩn Protobuf + JSON) ---
+spotify-json = type=http-request,pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/spotify-json.js
+spotify-proto = type=http-response,pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/spotify-proto.js,script-update-interval=0
+
+# --- 4. Locket Gold Full (VIP Unlock + Firebase Remote Config Custom Zekas) ---
+deleteHeader = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts|subscribers),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/deleteHeader.js,timeout=60
+revenuecat = type=http-response,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_DuyVinh09.js,requires-body=true,max-size=-1,timeout=60
+locket_rc = type=http-response,pattern=^https:\/\/firebaseremoteconfig\.googleapis\.com\/v1\/projects\/locket-4252a\/.+,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_Unlocked.js,requires-body=true,max-size=-1,timeout=60
+
+# --- 5. Đồ Họa & Chỉnh Ảnh / Video VIP ---
+Lightroom = type=http-response,pattern=^https:\/\/photos\.adobe\.io\/v\d\/accounts,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/lightroom.js
+Camscanner = type=http-response,pattern=https:\/\/(api|api-cs.*)\.intsig\.net\/purchase\/cs\/query_property\?,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/camScanner.js
+VSCO = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/?(.*?)*$),requires-body=true,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/VSCO.js
+PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/subscription\/apple\/purchases,requires-body=true,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/PicsArt.js
+PicsArtStorages = type=http-response,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/cloud-storage\/v1\/me\/storages,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/PicsArtStorages.js
+AlightMotion = type=http-response,pattern=^https:\/\/us-central1-alight-creative\.cloudfunctions\.net\/getAccountStatusAndLicenses,requires-body=true,timeout=10,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/AlightMotion.js
+Wink = type=http-response,pattern=^https:\/\/api-sub\.meitu\.com\/v2\/user\/vip_info_by_group\.json,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/WinkVipCrack.js
+Kinemaster = type=http-response,pattern=^https:\/\/api-account\.kinemasters\.com\/v\d\/user\/subscribe$,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/Kinemaster.js
+BeautyPlus = type=http-response,pattern=https:\/\/(api\.mr\.pixocial\.com\/v1\/manual_unlock|newbeee-api\.beautyplus\.com\/api\/v1\/asset\/balance),requires-body=true,max-size=-1,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/BeautyPlus.js
+Snow = type=http-response,pattern=^https?:\/\/user-snow-api\.snow\.me\/v\d\/purchase\/subscription\/subscriber\/status,requires-body=true,max-size=-1,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/Snow.js
+Meitu = type=http-response,pattern=^https?:\/\/(h5|api)\.xiuxiu\.meitu\.com\/v\d\/(h\d\/vip|vip|user)\/,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/MeiTuXiuXiu.js
+
+# --- 6. Tiện Ích & Mở Khóa Đa Ứng Dụng ---
+RevenueCatVip = type=http-response,pattern=^https:\/\/api\.(revenuecat|rc-backup)\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/revenuecat.js,requires-body=true,max-size=-1,timeout=60
+iTunes = type=http-response,pattern=^https?:\/\/buy\.itunes\.apple\.com\/verifyReceipt$,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/iTunes.js,requires-body=true,max-size=-1,timeout=60
+Truecaller = type=http-response,pattern=^https:\/\/premium-[^.]+\.truecaller\.com\/v\d+\/(subscriptions\/status|products\/apple)(\?.*)?$,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/TrueCaller.js
+SoundCloudGo+ = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/SoundCloudGoPlus.js
+
+[MITM]
+hostname = %APPEND% *.googlevideo.com, youtubei.googleapis.com, www.youtube.com, s.youtube.com, -redirector*.googlevideo.com, sub.store, api.revenuecat.com, firebaseremoteconfig.googleapis.com, api.rc-backup.com, buy.itunes.apple.com, spclient.wg.spotify.com, *spclient.spotify.com, api-mobile.soundcloud.com, api.picsart.com, us-central1-alight-creative.cloudfunctions.net, api-sub.meitu.com, photos.adobe.io, ap*.intsig.net, api-account.kinemasters.com, api.mr.pixocial.com, newbeee-api.beautyplus.com, user-snow-api.snow.me, h5.xiuxiu.meitu.com, api.xiuxiu.meitu.com, premium*.truecaller.com

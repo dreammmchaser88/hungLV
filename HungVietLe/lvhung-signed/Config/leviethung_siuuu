@@ -1,0 +1,107 @@
+#!name = Zekas VIP Hub (Full Locket Gold)
+#!desc = Cấu hình Shadowrocket VIP: Mở khóa Locket Gold Full (vĩnh viễn 2099), YouTube Premium, Spotify, VSCO, PicsArt, Lightroom, CamScanner,... và chặn sạch quảng cáo.
+#!author = Zekas Dev
+
+[General]
+bypass-system = true
+skip-proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, captive.apple.com
+tun-excluded-routes = 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.0.0.0/24, 192.0.2.0/24, 192.88.99.0/24, 192.168.0.0/16, 198.51.100.0/24, 203.0.113.0/24, 224.0.0.0/4, 255.255.255.255/32, 239.255.255.250/32
+dns-server = 1.1.1.1, 8.8.8.8, 1.0.0.1
+fallback-dns-server = 8.8.4.4
+ipv6 = false
+prefer-ipv6 = false
+dns-direct-system = false
+icmp-auto-reply = true
+always-reject-url-rewrite = false
+private-ip-answer = true
+dns-direct-fallback-proxy = false
+udp-policy-not-supported-behaviour = REJECT
+
+[Rule]
+# Chặn QUIC/UDP của YouTube để ép chạy HTTPS lọc quảng cáo
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT
+
+# Chặn các mạng quảng cáo In-App phổ biến
+DOMAIN-SUFFIX,googleads.g.doubleclick.net,REJECT
+DOMAIN-SUFFIX,admob.com,REJECT
+DOMAIN-SUFFIX,unityads.unity3d.com,REJECT
+DOMAIN-SUFFIX,applvn.com,REJECT
+DOMAIN-SUFFIX,applovin.com,REJECT
+DOMAIN-SUFFIX,vungle.com,REJECT
+DOMAIN-SUFFIX,adcolony.com,REJECT
+
+# Định tuyến mạng nội bộ & kết nối trực tiếp tại VN
+IP-CIDR,192.168.0.0/16,DIRECT
+IP-CIDR,10.0.0.0/8,DIRECT
+IP-CIDR,172.16.0.0/12,DIRECT
+IP-CIDR,127.0.0.0/8,DIRECT
+GEOIP,VN,DIRECT
+FINAL,DIRECT
+
+[Header Rewrite]
+# Xóa ETag chống cache RevenueCat & Spotify
+^https?://api.revenuecat.com/.+/(receipts$|subscribers/?(.*?)*$) header-del x-revenuecat-etag
+^https?://api.revenuecat.com/.+/(receipts$|subscribers/?(.*?)*$) header-del X-RevenueCat-ETag
+http-request ^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$ header-del if-none-match
+
+# Chuyển vùng TikTok / Douyin
+(?<=_region=)CN(?=&) URL 307 VN
+(?<=&app_version=)1[6-9]..(?=.?&) URL 307 17.
+(?<=\?version_code=)1[6-9]..(?=.?&) URL 307 17.
+
+[URL Rewrite]
+# Chặn quảng cáo Video YouTube & Tracking
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+
+[Map Local]
+# Phản hồi rỗng trực tiếp cho Ads initplayback của YouTube (tiết kiệm tài nguyên)
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+
+[Script]
+# --- 1. Sub-Store Node Manager ---
+Sub-Store Core = type=http-request,pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info))),script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-1.min.js,requires-body=true,timeout=120
+Sub-Store Simple = type=http-request,pattern=^https?:\/\/sub\.store,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-0.min.js,requires-body=true
+Sub-Store Sync = type=cron,cronexp=0 0 * * *,wake-system=1,timeout=120,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/cron-sync-artifacts.min.js
+
+# --- 2. YouTube Premium Tối Ưu (Vietsub, Chặn Shorts, PiP, Nghe nền) ---
+youtube.request = type=http-request,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|reel\/reel_watch_sequence|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,engine=jsc,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/youtube.response.js
+youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,engine=jsc,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/youtube.response.js,argument="{"lyricLang":"vi","captionLang":"vi","blockUpload":true,"blockImmersive":true,"debug":false}"
+
+# --- 3. Spotify Premium (Chuẩn Protobuf + JSON) ---
+spotify-json = type=http-request,pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/spotify-json.js
+spotify-proto = type=http-response,pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/spotify-proto.js,script-update-interval=0
+
+# --- 4. Locket Gold Full (VIP Unlock + Firebase Remote Config Custom Zekas) ---
+deleteHeader = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts|subscribers),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/deleteHeader.js,timeout=60
+revenuecat = type=http-response,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_DuyVinh09.js,requires-body=true,max-size=-1,timeout=60
+locket_rc = type=http-response,pattern=^https:\/\/firebaseremoteconfig\.googleapis\.com\/v1\/projects\/locket-4252a\/.+,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_Unlocked.js,requires-body=true,max-size=-1,timeout=60
+
+# --- 5. Đồ Họa & Chỉnh Ảnh / Video VIP ---
+Lightroom = type=http-response,pattern=^https:\/\/photos\.adobe\.io\/v\d\/accounts,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/lightroom.js
+Camscanner = type=http-response,pattern=https:\/\/(api|api-cs.*)\.intsig\.net\/purchase\/cs\/query_property\?,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/camScanner.js
+VSCO = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/?(.*?)*$),requires-body=true,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/VSCO.js
+PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/subscription\/apple\/purchases,requires-body=true,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/PicsArt.js
+PicsArtStorages = type=http-response,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/cloud-storage\/v1\/me\/storages,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/PicsArtStorages.js
+AlightMotion = type=http-response,pattern=^https:\/\/us-central1-alight-creative\.cloudfunctions\.net\/getAccountStatusAndLicenses,requires-body=true,timeout=10,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/AlightMotion.js
+Wink = type=http-response,pattern=^https:\/\/api-sub\.meitu\.com\/v2\/user\/vip_info_by_group\.json,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/WinkVipCrack.js
+Kinemaster = type=http-response,pattern=^https:\/\/api-account\.kinemasters\.com\/v\d\/user\/subscribe$,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/Kinemaster.js
+BeautyPlus = type=http-response,pattern=https:\/\/(api\.mr\.pixocial\.com\/v1\/manual_unlock|newbeee-api\.beautyplus\.com\/api\/v1\/asset\/balance),requires-body=true,max-size=-1,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/BeautyPlus.js
+Snow = type=http-response,pattern=^https?:\/\/user-snow-api\.snow\.me\/v\d\/purchase\/subscription\/subscriber\/status,requires-body=true,max-size=-1,timeout=60,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/Snow.js
+Meitu = type=http-response,pattern=^https?:\/\/(h5|api)\.xiuxiu\.meitu\.com\/v\d\/(h\d\/vip|vip|user)\/,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/MeiTuXiuXiu.js
+
+# --- 6. Tiện Ích & Mở Khóa Đa Ứng Dụng ---
+RevenueCatVip = type=http-response,pattern=^https:\/\/api\.(revenuecat|rc-backup)\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/revenuecat.js,requires-body=true,max-size=-1,timeout=60
+iTunes = type=http-response,pattern=^https?:\/\/buy\.itunes\.apple\.com\/verifyReceipt$,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/iTunes.js,requires-body=true,max-size=-1,timeout=60
+Truecaller = type=http-response,pattern=^https:\/\/premium-[^.]+\.truecaller\.com\/v\d+\/(subscriptions\/status|products\/apple)(\?.*)?$,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Utilities/TrueCaller.js
+SoundCloudGo+ = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/SoundCloudGoPlus.js
+
+[MITM]
+enable = true
+ca-passphrase = cd5tYPNU
+ca-p12 = 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
+hostname = %APPEND% *.googlevideo.com, youtubei.googleapis.com, www.youtube.com, s.youtube.com, -redirector*.googlevideo.com, sub.store, api.revenuecat.com, firebaseremoteconfig.googleapis.com, api.rc-backup.com, buy.itunes.apple.com, spclient.wg.spotify.com, *spclient.spotify.com, api-mobile.soundcloud.com, api.picsart.com, us-central1-alight-creative.cloudfunctions.net, api-sub.meitu.com, photos.adobe.io, ap*.intsig.net, api-account.kinemasters.com, api.mr.pixocial.com, newbeee-api.beautyplus.com, user-snow-api.snow.me, h5.xiuxiu.meitu.com, api.xiuxiu.meitu.com, premium*.truecaller.com
