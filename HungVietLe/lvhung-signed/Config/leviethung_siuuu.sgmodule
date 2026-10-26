@@ -55,9 +55,9 @@ spotify-json = type=http-request,pattern=^https:\/\/(spclient\.wg\.spotify\.com|
 spotify-proto = type=http-response,pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Media/spotify-proto.js,script-update-interval=0
 
 # --- 4. Locket Gold Full (VIP Unlock + Firebase Remote Config Custom Zekas) ---
-deleteHeader = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts|subscribers),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/deleteHeader.js,timeout=60
-revenuecat = type=http-response,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_DuyVinh09.js,requires-body=true,max-size=-1,timeout=60
-locket_rc = type=http-response,pattern=^https:\/\/firebaseremoteconfig\.googleapis\.com\/v1\/projects\/locket-4252a\/.+,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Locket/Locket_Unlocked.js,requires-body=true,max-size=-1,timeout=60
+deleteHeader = type=http-request,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts|subscribers),script-path=https://raw.githubusercontent.com/dreammmchaser88/hungLV/refs/heads/main/HungVietLe/lvhung-signed/Locket/deleteHeader.js,timeout=60
+revenuecat = type=http-response,pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts$|subscribers\/[^/]+$),script-path=https://raw.githubusercontent.com/dreammmchaser88/hungLV/refs/heads/main/HungVietLe/lvhung-signed/Locket/Locket_ViettHunwngg88_v2.js,requires-body=true,max-size=-1,timeout=60
+locket_rc = type=http-response,pattern=^https:\/\/firebaseremoteconfig\.googleapis\.com\/v1\/projects\/locket-4252a\/.+,script-path=https://raw.githubusercontent.com/dreammmchaser88/hungLV/refs/heads/main/HungVietLe/lvhung-signed/Locket/Locket_Unlocked_v2.js,requires-body=true,max-size=-1,timeout=60
 
 # --- 5. Đồ Họa & Chỉnh Ảnh / Video VIP ---
 Lightroom = type=http-response,pattern=^https:\/\/photos\.adobe\.io\/v\d\/accounts,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lhhoang5425/nocket-gay-hoang3te/main/js/Photo-Video/lightroom.js
